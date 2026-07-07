@@ -83,6 +83,11 @@
             }
         }
 
+        /* Su mobile, quando il video è attivo, mostra prima il video+grafico e poi i controlli */
+        @media(max-width: 899px) {
+            body.video-active .display-panel { order: -1; }
+        }
+
         .panel {
             background-color: var(--bg-secondary);
             border-radius: 14px;
@@ -510,7 +515,10 @@
             <div class="logo-box">Bcube</div>
             <div class="logo-text">Dashboard</div>
         </div>
-        <div id="status-tag" style="font-size: 12px; color: var(--text-muted);">Pronto</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div id="status-tag" style="font-size: 12px; color: var(--text-muted);">Pronto</div>
+            <button onclick="openSettingsModal()" title="Impostazioni API" style="background:transparent; border:1px solid var(--border-color); color: var(--text-muted); border-radius: 8px; padding: 6px 8px; cursor:pointer; font-size: 14px;">⚙️</button>
+        </div>
     </header>
 
     <div class="main-grid">
@@ -531,15 +539,6 @@
                     <button id="mode-no-video" class="btn-toggle active" onclick="setVideoMode(false)">Senza Video</button>
                     <button id="mode-video" class="btn-toggle" onclick="setVideoMode(true)">Con Video</button>
                 </div>
-            </div>
-
-            <div class="control-group" id="yt-key-wrapper" style="display:none;">
-                <label style="font-size: 10px;">YouTube Data API Key (ricerca video reali e verificati):</label>
-                <div style="display: flex; gap: 6px;">
-                    <input type="password" id="yt-api-key" placeholder="Incolla qui la tua YouTube API Key..." style="flex: 1; font-size:12px; padding:8px;" onchange="saveYtKey()">
-                    <button class="btn btn-reset" onclick="clearYtKey()" style="padding: 8px 12px; font-size: 11px;">Pulisci</button>
-                </div>
-                <div id="yt-key-status" style="font-size: 10px; color: var(--text-muted);">Senza chiave: uso la libreria video interna (non garantita al 100%).</div>
             </div>
 
             <button id="btn-gemini-trigger" class="btn btn-ai" style="display:none;" onclick="openGeminiModal()">🤖 Chiedi a Gemini il Video Perfetto</button>
@@ -660,17 +659,39 @@
     <div class="modal" id="gemini-modal">
         <div class="modal-content">
             <div class="modal-header">🤖 Analisi AI dell'Allenamento</div>
-            <div class="control-group" id="api-key-wrapper">
-                <label style="font-size: 10px;">Gemini API Key (Verrà salvata in locale):</label>
-                <div style="display: flex; gap: 6px;">
-                    <input type="password" id="gemini-key" placeholder="Incolla qui la tua API Key..." style="flex: 1; font-size:12px; padding:8px;">
-                    <button class="btn btn-reset" onclick="clearApiKey()" style="padding: 8px 12px; font-size: 11px;">Pulisci</button>
-                </div>
-            </div>
             <div class="modal-body" id="gemini-log">Attendo istruzioni. Clicca su "Analizza Programma".</div>
             <div style="display:flex; gap:8px; justify-content: flex-end;">
                 <button class="btn" onclick="closeGeminiModal()" style="font-size:12px; padding:6px 12px; background:var(--border-color); color:white;">Chiudi</button>
                 <button class="btn btn-start" onclick="processGeminiAI()" style="font-size:12px; padding:6px 12px; background: linear-gradient(135deg, #a855f7, #2563eb);">Analizza Programma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP IMPOSTAZIONI: unico punto dove inserire le chiavi API -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">⚙️ Impostazioni API</div>
+
+            <div class="control-group">
+                <label style="font-size: 10px;">Gemini API Key (da Google AI Studio) — sceglie lo scenario e la query di ricerca</label>
+                <div style="display: flex; gap: 6px;">
+                    <input type="password" id="gemini-key" placeholder="Incolla qui la tua Gemini API Key..." style="flex: 1; font-size:12px; padding:8px;" onchange="saveGeminiKey()">
+                    <button class="btn btn-reset" onclick="clearApiKey()" style="padding: 8px 12px; font-size: 11px;">Pulisci</button>
+                </div>
+                <div id="gemini-key-status" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Senza chiave: uso lo scenario automatico interno.</div>
+            </div>
+
+            <div class="control-group">
+                <label style="font-size: 10px;">YouTube Data API Key (da Google Cloud Console) — trova video verificati e incorporabili</label>
+                <div style="display: flex; gap: 6px;">
+                    <input type="password" id="yt-api-key" placeholder="Incolla qui la tua YouTube API Key..." style="flex: 1; font-size:12px; padding:8px;" onchange="saveYtKey()">
+                    <button class="btn btn-reset" onclick="clearYtKey()" style="padding: 8px 12px; font-size: 11px;">Pulisci</button>
+                </div>
+                <div id="yt-key-status" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Senza chiave: uso la libreria video interna (non garantita al 100%).</div>
+            </div>
+
+            <div style="display:flex; justify-content: flex-end;">
+                <button class="btn" onclick="closeSettingsModal()" style="font-size:12px; padding:6px 12px; background:var(--border-color); color:white;">Chiudi</button>
             </div>
         </div>
     </div>
@@ -758,6 +779,7 @@
             const savedKey = localStorage.getItem("bcube_api_key");
             if(savedKey) {
                 document.getElementById('gemini-key').value = savedKey;
+                document.getElementById('gemini-key-status').innerText = "✅ Chiave salvata: analisi AI attiva.";
             }
             const savedYtKey = localStorage.getItem("bcube_yt_api_key");
             if(savedYtKey) {
@@ -776,10 +798,26 @@
             loadProgram();
         };
 
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.add('open');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('open');
+        }
+
+        function saveGeminiKey() {
+            const key = document.getElementById('gemini-key').value.trim();
+            if (key !== "") {
+                localStorage.setItem("bcube_api_key", key);
+                document.getElementById('gemini-key-status').innerText = "✅ Chiave salvata: analisi AI attiva.";
+            }
+        }
+
         function clearApiKey() {
             localStorage.removeItem("bcube_api_key");
             document.getElementById('gemini-key').value = "";
-            document.getElementById('gemini-log').innerText = "[SISTEMA] Chiave API rimossa correttamente.";
+            document.getElementById('gemini-key-status').innerText = "Senza chiave: uso lo scenario automatico interno.";
         }
 
         function saveYtKey() {
@@ -827,21 +865,22 @@
             const btnNoVid = document.getElementById('mode-no-video');
             const btnVid = document.getElementById('mode-video');
             const aiBtn = document.getElementById('btn-gemini-trigger');
-            const ytKeyWrapper = document.getElementById('yt-key-wrapper');
 
             if(enable) {
                 body.classList.add('video-active');
                 btnNoVid.classList.remove('active');
                 btnVid.classList.add('active');
                 aiBtn.style.display = 'block';
-                ytKeyWrapper.style.display = 'flex';
                 triggerVideoUpdate();
+                setTimeout(() => {
+                    const container = document.getElementById('youtube-container');
+                    if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             } else {
                 body.classList.remove('video-active');
                 btnNoVid.classList.add('active');
                 btnVid.classList.remove('active');
                 aiBtn.style.display = 'none';
-                ytKeyWrapper.style.display = 'none';
                 stopVideoPlayback();
             }
         }
