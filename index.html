@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bcube - Allenamento Interattivo Mobile</title>
+    <title>Tapis - Allenamento Interattivo Mobile</title>
     <style>
         :root {
             --bg-primary: #0f172a;
@@ -239,6 +239,26 @@
             flex-direction: column;
             gap: 16px;
         }
+
+        /* ═══════════ SUPPORTO: tabelle guida in stile Diario ═══════════ */
+        .gtable { width: 100%; font-size: 13px; border-collapse: collapse; }
+        .gtable td { padding: 7px 6px; vertical-align: top; border-bottom: 1px solid var(--border-color); }
+        .gtable td:first-child { width: 40px; text-align: center; font-size: 16px; }
+        .gsec { font-weight: 700; color: var(--accent-blue); margin: 12px 0 4px; font-size: 13px; }
+        .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.6; }
+        .guide-code {
+            display: block;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 6px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -378,6 +398,34 @@
         @keyframes panelFadeIn {
             from { opacity: 0; transform: translateY(-6px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes aispin { to { transform: rotate(360deg); } }
+        #aiSpin {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 18px;
+            z-index: 999;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-radius: 22px;
+            padding: 9px 15px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+        #aiSpin.on { display: flex; }
+        #aiSpin .sp {
+            width: 17px; height: 17px;
+            border-radius: 50%;
+            border: 2.5px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            animation: aispin 0.8s linear infinite;
         }
 
         body.video-active .video-container {
@@ -621,17 +669,19 @@
 
     <header>
         <div class="logo-container">
-            <div class="logo-box">Bcube</div>
+            <div class="logo-box">Tapis</div>
             <div class="logo-text">Dashboard</div>
         </div>
         <div class="header-nav">
             <button id="nav-workout" class="active" onclick="switchView('workout')">🏃 Run</button>
             <button id="nav-history" onclick="switchView('history')">📊 Storico</button>
+            <button id="nav-support" onclick="switchView('support')">❓ Supporto</button>
         </div>
         <div id="status-tag" style="font-size: 12px; color: var(--text-muted);"></div>
     </header>
 
     <div id="view-workout" class="view active">
+    <div id="reminder-banner" style="display:none; max-width:1100px; margin:0 auto 10px; padding:10px 14px; background:linear-gradient(135deg,#7c2d12,#9a3412); border-radius:10px; font-size:12.5px; font-weight:600;"></div>
     <div class="main-grid">
         <div class="panel">
             <div class="control-group">
@@ -826,17 +876,17 @@
                         <label>Gemini API Key (Google AI Studio) — per il piano di allenamento e l'analisi dei progressi</label>
                         <input type="password" id="ai-key" placeholder="Incolla qui la tua Gemini API Key..." onchange="saveAiKey()">
                     </div>
+                    <div class="full">
+                        <label>Modello Gemini</label>
+                        <select id="ai-model" onchange="saveAiModel()" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-main);"></select>
+                    </div>
                 </div>
                 <div id="ai-key-status" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Senza chiave: Coach AI non disponibile.</div>
 
                 <div class="profile-grid" style="margin-top:14px;">
-                    <div>
+                    <div class="full">
                         <label>CLIENT_ID (Google Cloud)</label>
                         <input type="text" id="dCid" placeholder="xxxx.apps.googleusercontent.com" onchange="saveDriveSettings()">
-                    </div>
-                    <div>
-                        <label>API_KEY (Google Cloud, opzionale)</label>
-                        <input type="text" id="dKey" placeholder="AIza…" onchange="saveDriveSettings()">
                     </div>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
@@ -845,6 +895,24 @@
                     <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveImport()">⬇️ Importa da Drive</button>
                 </div>
                 <div id="driveStatus" style="font-size:11px; color:var(--text-muted); margin-top:8px;">Non connesso.</div>
+
+                <div class="profile-grid" style="margin-top:14px;">
+                    <div class="full">
+                        <label>YouTube Data API Key (opzionale — solo riserva se la libreria video interna si esaurisce)</label>
+                        <input type="password" id="yt-fallback-key" placeholder="Incolla qui, solo se vuoi la ricerca live di riserva..." onchange="saveYtFallbackKey()">
+                    </div>
+                </div>
+                <div id="yt-fallback-status" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Senza chiave: si usa solo la libreria video interna.</div>
+
+                <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
+                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:6px;">💾 Backup locale completo</label>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Profilo, obiettivi, storico, fisico, benessere, infortuni e analisi AI in un unico file — utile anche senza Drive, o se cambi telefono.</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="exportFullBackup()">⬇️ Esporta backup (.json)</button>
+                        <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="document.getElementById('import-backup-file').click()">⬆️ Importa backup</button>
+                        <input type="file" id="import-backup-file" accept="application/json" style="display:none;" onchange="importFullBackup(event)">
+                    </div>
+                </div>
             </div>
 
             <div class="panel">
@@ -897,6 +965,32 @@
             </div>
 
             <div class="panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="font-size:13px; font-weight:700;">🩹 Infortuni / Pause</label>
+                    <button class="btn btn-start" style="padding:5px 10px; font-size:11px; margin-top:0;" onclick="toggleInjuryForm()">➕ Nuovo</button>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Il Coach AI ne tiene conto per non spingerti durante un recupero.</div>
+                <div id="injury-form" style="display:none; margin-bottom:14px; padding:12px; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary);">
+                    <div class="profile-grid">
+                        <div>
+                            <label>Data inizio</label>
+                            <input type="date" id="injury-start">
+                        </div>
+                        <div>
+                            <label>Data fine (vuoto = in corso)</label>
+                            <input type="date" id="injury-end">
+                        </div>
+                        <div class="full">
+                            <label>Nota</label>
+                            <input type="text" id="injury-note" placeholder="es. Infortunio ginocchio, riposo consigliato">
+                        </div>
+                    </div>
+                    <button class="btn btn-start" style="margin-top:10px; padding:8px 16px; font-size:12px;" onclick="saveInjury()">Salva</button>
+                </div>
+                <div id="injury-list"><div class="session-meta">Nessun infortunio/pausa registrato.</div></div>
+            </div>
+
+            <div class="panel">
                 <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">📈 Riepilogo</label>
                 <div class="period-tabs" style="margin-bottom:10px; flex-wrap:wrap;">
                     <button id="period-day" onclick="setSummaryPeriod('day')">Giorno</button>
@@ -944,14 +1038,36 @@
             </div>
 
             <div class="panel">
-                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">🤖 Coach AI</label>
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">Analizza obiettivi, storico allenamenti, fisico e umore per generare un piano o un'analisi dei progressi. Ogni analisi resta salvata: la più recente è mostrata per prima.</div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-                    <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="generateAiPlan()">📋 Genera piano di allenamento</button>
-                    <button class="btn btn-start" style="padding:8px 14px; font-size:12px; background: linear-gradient(135deg, #a855f7, #2563eb);" onclick="generateAiAnalysis()">📈 Analizza i progressi</button>
+                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">🏆 Record Personali</label>
+                <div class="summary-grid" id="records-grid">
+                    <div class="stat-box"><div class="stat-label">Km più lunghi</div><div id="rec-km" class="stat-value">—</div></div>
+                    <div class="stat-box"><div class="stat-label">Velocità più alta</div><div id="rec-speed" class="stat-value">—</div></div>
+                    <div class="stat-box"><div class="stat-label">Sessione più lunga</div><div id="rec-duration" class="stat-value">—</div></div>
                 </div>
-                <div id="ai-log-status" style="font-size:11px; color:var(--text-muted); margin-bottom:10px;"></div>
-                <div id="ai-log-list"><div class="session-meta">Nessuna analisi generata ancora.</div></div>
+            </div>
+
+            <div class="panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:13px; font-weight:700;">📋 Piano di Allenamento</label>
+                    <button class="btn btn-start" style="padding:6px 12px; font-size:11px; margin-top:0;" onclick="generateAiPlan()">🔄 Genera nuovo</button>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">Basato su obiettivi, sessioni registrate e voti di benessere.</div>
+                <div id="ai-plan-status" style="font-size:11px; color:var(--text-muted); margin-bottom:10px;"></div>
+                <div id="ai-plan-latest"><div class="session-meta">Nessun piano generato ancora.</div></div>
+                <div id="ai-plan-history-toggle" style="display:none; font-size:11px; color:var(--accent-blue); margin-top:8px; cursor:pointer;" onclick="toggleAiHistory('plan')">▼ Storico piani precedenti</div>
+                <div id="ai-plan-history" style="display:none; margin-top:8px;"></div>
+            </div>
+
+            <div class="panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:13px; font-weight:700;">📈 Analisi Progressi</label>
+                    <button class="btn btn-start" style="padding:6px 12px; font-size:11px; margin-top:0; background: linear-gradient(135deg, #a855f7, #2563eb);" onclick="generateAiAnalysis()">🔄 Genera nuova</button>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">Confronta sessioni recenti, fisico e umore con gli obiettivi impostati.</div>
+                <div id="ai-analysis-status" style="font-size:11px; color:var(--text-muted); margin-bottom:10px;"></div>
+                <div id="ai-analysis-latest"><div class="session-meta">Nessuna analisi generata ancora.</div></div>
+                <div id="ai-analysis-history-toggle" style="display:none; font-size:11px; color:var(--accent-blue); margin-top:8px; cursor:pointer;" onclick="toggleAiHistory('analysis')">▼ Storico analisi precedenti</div>
+                <div id="ai-analysis-history" style="display:none; margin-top:8px;"></div>
             </div>
 
             <div class="panel">
@@ -1003,6 +1119,91 @@
         </div>
     </div>
 
+    <div id="view-support" class="view">
+        <div class="history-wrap">
+
+            <div class="panel"><label style="font-size:16px; font-weight:700;">❓ Guida rapida</label>
+                <div class="hint">Come funziona, in breve: scegli un programma (o l'Allenamento Manuale M1), premi <b>Avvia</b>, e a fine sessione i dati vengono registrati da soli nello <b>Storico</b>. Se colleghi il tuo tapis via Bluetooth, l'allenamento a tempo libero parte e si ferma da solo col movimento reale del tapis. Il resto — obiettivi, fisico, benessere, Coach AI — sono strumenti per capire se stai migliorando, tutti opzionali.</div>
+            </div>
+
+            <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">Le sezioni</label><table class="gtable">
+                <tr><td>🏃</td><td><b>Run</b> — scegli il programma (P1-P36 o M1 Manuale), avvia/pausa/reset, video di scenario in tempo reale, cruscotto live con segmento/velocità/pendenza, e il collegamento Bluetooth al tapis.</td></tr>
+                <tr><td>📊</td><td><b>Storico</b> — profilo, connessioni (AI/Drive/backup), storico fisico, obiettivi, riepilogo con grafico cliccabile, record personali, Coach AI (piano + analisi), sessioni, infortuni/pause, benessere giornaliero.</td></tr>
+                <tr><td>❓</td><td><b>Supporto</b> — questa pagina.</td></tr>
+            </table></div>
+
+            <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">Come si usa</label><table class="gtable">
+                <tr><td>▶️</td><td><b>Avvia/Pausa/Reset</b>: il timer è basato sull'orologio reale del telefono, quindi resta preciso anche se cambi app per un momento (es. per la musica).</td></tr>
+                <tr><td>🔗</td><td><b>Bluetooth</b>: funziona solo se il tuo tapis espone lo standard aperto FTMS. Appena rileva movimento parte da solo un allenamento a tempo libero (M1); si ferma da solo quando il tapis torna a velocità 0 — non serve alcun pulsante di stop nell'app.</td></tr>
+                <tr><td>🎬</td><td><b>Video</b>: scelto in automatico in base a velocità/pendenza del programma (o alla scelta manuale in M1). Se un video risulta bloccato, l'app passa al successivo da sola.</td></tr>
+                <tr><td>🎯</td><td><b>Obiettivi</b> (in Storico): "volume" (km per settimana/mese/anno) o "tempo su distanza" (es. 4 km in meno di 30 min). Il progresso si calcola da solo dallo storico.</td></tr>
+                <tr><td>⭐</td><td><b>Benessere</b>: un voto 1-5 al giorno, anche senza allenamento — aiuta il Coach AI a capire se un calo di performance dipende dalla stanchezza.</td></tr>
+                <tr><td>🩹</td><td><b>Infortuni/Pause</b>: segnali un periodo di recupero e il Coach AI eviterà di consigliarti di aumentare il carico in quel periodo.</td></tr>
+                <tr><td>📊</td><td><b>Grafico Andamento</b>: tocca una colonna per filtrare i numeri del Riepilogo su quel singolo periodo; ritocca per tornare alla vista intera.</td></tr>
+                <tr><td>✏️</td><td><b>Aggiungi sessione</b> (in Sessioni): per registrare un allenamento fatto con un programma numerato senza Bluetooth — inserisci tempo e km, l'app calcola la velocità media e stima le calorie con la pendenza nominale del programma.</td></tr>
+            </table></div>
+
+            <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">🤖 Coach AI (Gemini)</label>
+                <div class="hint">Serve una chiave gratuita da <b>aistudio.google.com</b> (vedi guida sotto), da incollare in <b>Storico → Connessioni</b>. "auto" prova da solo i modelli gratuiti disponibili in ordine. Le risposte sono sintetiche e basate solo sui dati che l'app registra (sessioni, voti di benessere, fisico) — non su supposizioni. Piano e Analisi restano separati, con lo storico delle generazioni precedenti dietro "▼ Storico" per non appesantire la pagina.</div>
+            </div>
+
+            <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">💾 Backup & dati</label>
+                <div class="hint"><b>Dove sono i dati:</b> nel browser di questo dispositivo, non nel file dell'app. Aggiornare l'app (ricaricando un nuovo index.html su GitHub) non li tocca.<br><br>
+                <b>Drive</b> (Storico → Connessioni): dopo "Collega Drive", "Salva ora" carica tutto, "Importa da Drive" scarica e sovrascrive il locale.<br><br>
+                <b>Backup locale</b>: stesso pannello — Esporta/Importa un file .json con tutti i dati (profilo, storico, obiettivi, fisico, benessere, infortuni, analisi AI). Utile prima di cambiare telefono o come rete di sicurezza anche senza Drive.</div>
+            </div>
+
+            <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">🔧 Guida configurazione API: Google Drive e Gemini</label>
+
+                <div class="gsec">Parte 1 — Google Drive API</div>
+
+                <div style="font-weight:700; font-size:12.5px; margin-top:8px;">Fase A: Creare il progetto e abilitare l'API</div>
+                <table class="gtable">
+                    <tr><td>1</td><td>Vai su <b>console.cloud.google.com</b></td></tr>
+                    <tr><td>2</td><td>Crea un progetto (in alto a sinistra → "Nuovo progetto") o apri quello dell'app</td></tr>
+                    <tr><td>3</td><td>Menu ☰ → "API e servizi" → "Libreria"</td></tr>
+                    <tr><td>4</td><td>Cerca <b>"Google Drive API"</b> e clicca su "Abilita"</td></tr>
+                </table>
+
+                <div style="font-weight:700; font-size:12.5px; margin-top:10px;">Fase B: Consenso OAuth e sblocco utente di test</div>
+                <div class="hint" style="margin-top:0;">Finché l'app è in modalità "Testing", Google blocca gli account non autorizzati esplicitamente.</div>
+                <table class="gtable">
+                    <tr><td>1</td><td>Menu ☰ → "API e servizi" → "Schermata di consenso OAuth"</td></tr>
+                    <tr><td>2</td><td>Scegli tipo <b>"Esterno"</b> e compila nome app + la tua email</td></tr>
+                    <tr><td>3</td><td>Scorri fino a <b>"Utenti di test"</b> (Test users)</td></tr>
+                    <tr><td>4</td><td>Clicca <b>"+ ADD USERS"</b> e digita esattamente la tua email Google (quella con cui userai l'app)</td></tr>
+                    <tr><td>5</td><td><b>Fondamentale:</b> clicca su <b>Salva</b> per confermare</td></tr>
+                </table>
+
+                <div style="font-weight:700; font-size:12.5px; margin-top:10px;">Fase C: Creare le credenziali</div>
+                <table class="gtable">
+                    <tr><td>1</td><td>Menu ☰ → "API e servizi" → "Credenziali"</td></tr>
+                    <tr><td>2</td><td>"Crea credenziali" → <b>"ID client OAuth"</b></td></tr>
+                    <tr><td>3</td><td>Tipo applicazione: <b>"App web"</b></td></tr>
+                    <tr><td>4</td><td>In "Origini JavaScript autorizzate" incolla l'URL base del sito (es. <code>https://tuonome.github.io</code>) — <b>solo dominio</b>, niente percorsi o slash finali</td></tr>
+                    <tr><td>5</td><td>Salva: ottieni un <b>Client ID</b> (es. <code>123456-abc.apps.googleusercontent.com</code>). Copialo</td></tr>
+                </table>
+
+                <div style="font-weight:700; font-size:12.5px; margin-top:10px;">Fase D: Connettere l'app</div>
+                <table class="gtable">
+                    <tr><td>1</td><td>Vai su <b>Storico → Connessioni</b></td></tr>
+                    <tr><td>2</td><td>Incolla il Client ID nel campo <b>CLIENT_ID</b></td></tr>
+                    <tr><td>3</td><td>Premi <b>"🔗 Collega Drive"</b> e autorizza col tuo account (ora sbloccato)</td></tr>
+                </table>
+
+                <div class="gsec">Parte 2 — Google Gemini API</div>
+                <table class="gtable">
+                    <tr><td>1</td><td>Vai su <b>aistudio.google.com/apikey</b></td></tr>
+                    <tr><td>2</td><td>Clicca in alto a destra su <b>"Crea chiave"</b></td></tr>
+                    <tr><td>3</td><td>Scegli/crea il progetto Google Cloud a cui associarla</td></tr>
+                    <tr><td>4</td><td>Genera la chiave e copiala nel campo <b>Gemini API Key</b> in Storico → Connessioni</td></tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="aiSpin"><span class="sp"></span>Coach AI al lavoro…</div>
 
     <script>
         // CONTROLLO FONDAMENTALE: Rileva se il file è aperto localmente (file:///)
@@ -1093,6 +1294,21 @@
             "trail_running_montagna":    "Corsa in montagna"
         };
 
+        // Query di ricerca usate SOLO come fallback live (vedi searchYouTubeFallback),
+        // quando la libreria interna si esaurisce e l'utente ha impostato una
+        // chiave YouTube Data API opzionale in Connessioni.
+        const categorySearchQueries = {
+            "passeggiata_citta":         "slow relaxing city walk 4K POV treadmill",
+            "jogging_citta":             "city jogging virtual run 4K POV treadmill",
+            "corsa_citta":               "fast city run virtual treadmill 4K POV",
+            "passeggiata_collina":       "gentle hill walk virtual treadmill 4K nature",
+            "camminata_blanda_collina":  "moderate hill walking trail virtual treadmill 4K",
+            "corsa_collina":             "hill trail running virtual treadmill 4K POV",
+            "camminata_ripida_montagna": "steep mountain walk virtual treadmill 4K POV slow",
+            "salita_montagna":           "mountain incline hike virtual treadmill 4K POV",
+            "trail_running_montagna":    "steep mountain trail running virtual treadmill 4K POV"
+        };
+
         function shuffleArray(arr) {
             const a = arr.slice();
             for (let i = a.length - 1; i > 0; i--) {
@@ -1116,6 +1332,7 @@
             updateHeaderName();
             loadAiKeyIntoForm();
             loadDriveSettingsIntoForm();
+            loadYtFallbackKeyIntoForm();
             renderWellnessStars();
             renderHistoryViews();
             tryDriveAuto();
@@ -1503,7 +1720,7 @@
         function playCurrentQueueVideo() {
             if (videoQueue.length === 0) return;
             if (queueIndex >= videoQueue.length) {
-                showEmbedFallback();
+                tryYoutubeFallbackSearch();
                 return;
             }
             const videoId = videoQueue[queueIndex];
@@ -1520,6 +1737,32 @@
                 const frame = ensureIframe();
                 frame.src = embedUrl(videoId);
                 attachPlayer();
+            }
+        }
+
+        // Riserva: quando la libreria interna è esaurita (tutti i video hanno
+        // dato errore), se l'utente ha impostato la chiave YouTube Data API
+        // opzionale in Connessioni, prova una ricerca live filtrata solo su
+        // video incorporabili, prima di arrendersi del tutto.
+        let fallbackSearchTried = false;
+        async function tryYoutubeFallbackSearch() {
+            const key = getYtFallbackKey();
+            if (!key || fallbackSearchTried) { showEmbedFallback(); return; }
+            fallbackSearchTried = true;
+            setVideoStatus('🔎 Libreria interna esaurita, provo una ricerca live di riserva...');
+            try {
+                const query = categorySearchQueries[currentQueueLabel] || categorySearchQueries[Object.keys(categoryLabels).find(k => categoryLabels[k] === currentQueueLabel)] || 'virtual walk 4K treadmill';
+                const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoSyndicated=true&maxResults=8&q=${encodeURIComponent(query)}&key=${key}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const ids = (data.items || []).map(i => i.id && i.id.videoId).filter(Boolean);
+                if (ids.length === 0) throw new Error('nessun risultato');
+                videoQueue = shuffleArray(ids);
+                queueIndex = 0;
+                playCurrentQueueVideo();
+            } catch (e) {
+                showEmbedFallback();
             }
         }
 
@@ -1559,6 +1802,7 @@
             videoQueue = shuffleArray(list);
             queueIndex = 0;
             currentQueueLabel = (categoryLabels[category] || category);
+            fallbackSearchTried = false;
         }
 
         function triggerVideoUpdate() {
@@ -1837,6 +2081,31 @@
         function deleteSession(id) {
             saveHistoryData(loadHistory().filter(e => e.id !== id));
             renderHistoryViews();
+        }
+
+        function exportFullBackup() {
+            const blob = new Blob([JSON.stringify(collectAllData(), null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'tapis_backup_completo_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+        }
+
+        function importFullBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(reader.result);
+                    if (!confirm('Importare questo backup? Sovrascrive tutti i dati locali attuali (profilo, storico, obiettivi, fisico, benessere, infortuni, analisi AI).')) return;
+                    applyAllData(data);
+                    location.reload();
+                } catch (e) {
+                    alert('File non valido: ' + e.message);
+                }
+            };
+            reader.readAsText(file);
         }
 
         function exportHistory() {
@@ -2144,7 +2413,35 @@
            storico (la più recente per prima).
            ═══════════════════════════════════════════════════════════════ */
         const AI_KEY_STORAGE = 'bcube_ai_key';
+        const AI_MODEL_STORAGE = 'bcube_ai_model';
         const AI_LOG_KEY = 'bcube_ai_log';
+
+        // Stessa catena di modelli/fallback del Diario Dieta & Sport: "auto"
+        // prova in ordine i modelli Flash (gratuiti); un modello scelto a mano
+        // viene provato per primo e poi si ripiega comunque sulla catena Flash
+        // se non disponibile. I modelli Pro in fondo richiedono fatturazione.
+        const GEM_CHAIN = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+        const GEM_ALL = ["auto"].concat(GEM_CHAIN, ["gemini-3.1-pro-preview", "gemini-2.5-pro"]);
+
+        function gemModelsToTry() {
+            const m = localStorage.getItem(AI_MODEL_STORAGE) || "auto";
+            return m === "auto" ? GEM_CHAIN : [m].concat(GEM_CHAIN.filter(x => x !== m));
+        }
+
+        const YT_FALLBACK_KEY_STORAGE = 'bcube_yt_fallback_key';
+        function saveYtFallbackKey() {
+            const key = document.getElementById('yt-fallback-key').value.trim();
+            if (key) {
+                localStorage.setItem(YT_FALLBACK_KEY_STORAGE, key);
+                document.getElementById('yt-fallback-status').innerText = '✅ Chiave salvata: ricerca live di riserva attiva.';
+            }
+        }
+        function loadYtFallbackKeyIntoForm() {
+            const key = localStorage.getItem(YT_FALLBACK_KEY_STORAGE) || '';
+            document.getElementById('yt-fallback-key').value = key;
+            document.getElementById('yt-fallback-status').innerText = key ? '✅ Chiave salvata: ricerca live di riserva attiva.' : 'Senza chiave: si usa solo la libreria video interna.';
+        }
+        function getYtFallbackKey() { return localStorage.getItem(YT_FALLBACK_KEY_STORAGE) || ''; }
 
         function saveAiKey() {
             const key = document.getElementById('ai-key').value.trim();
@@ -2153,10 +2450,24 @@
                 document.getElementById('ai-key-status').innerText = '✅ Chiave salvata: Coach AI attivo.';
             }
         }
+        function saveAiModel() {
+            localStorage.setItem(AI_MODEL_STORAGE, document.getElementById('ai-model').value);
+        }
         function loadAiKeyIntoForm() {
             const key = localStorage.getItem(AI_KEY_STORAGE) || '';
             document.getElementById('ai-key').value = key;
             document.getElementById('ai-key-status').innerText = key ? '✅ Chiave salvata: Coach AI attivo.' : 'Senza chiave: Coach AI non disponibile.';
+
+            const modelSelect = document.getElementById('ai-model');
+            if (modelSelect.options.length === 0) {
+                GEM_ALL.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.innerText = m === 'auto' ? 'auto (consigliato)' : m;
+                    modelSelect.appendChild(opt);
+                });
+            }
+            modelSelect.value = localStorage.getItem(AI_MODEL_STORAGE) || 'auto';
         }
         function getAiKey() { return localStorage.getItem(AI_KEY_STORAGE) || ''; }
 
@@ -2166,35 +2477,177 @@
         }
         function saveAiLogData(arr) { localStorage.setItem(AI_LOG_KEY, JSON.stringify(arr)); }
 
-        // Chiamata Gemini semplice con gestione errori chiara (chiave assente,
-        // quota esaurita, errore di rete).
+        const geminiWait = ms => new Promise(r => setTimeout(r, ms));
+
+        // Indicatore "AI in corso" globale (visibile da qualunque scheda, Run o Storico)
+        let AIBUSY = 0;
+        function aiBusy() { AIBUSY++; const e = document.getElementById('aiSpin'); if (e) e.classList.add('on'); }
+        function aiDone() { AIBUSY = Math.max(0, AIBUSY - 1); if (AIBUSY === 0) { const e = document.getElementById('aiSpin'); if (e) e.classList.remove('on'); } }
+
+        // Chiamata Gemini robusta: fino a 3 tentativi per modello con backoff su
+        // 429/503/rete; passa al modello successivo su 404/quota esaurita;
+        // errori tipizzati per messaggi chiari (stessa logica del Diario Dieta).
         async function geminiCallSimple(prompt) {
+            aiBusy();
+            try { return await geminiCallInner(prompt); }
+            finally { aiDone(); }
+        }
+
+        async function geminiCallInner(prompt) {
             const key = getAiKey();
             if (!key) throw new Error('Nessuna chiave Gemini impostata (vedi Connessioni).');
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            if (res.status === 429) throw new Error('Quota Gemini esaurita per ora, riprova più tardi.');
-            if (res.status === 400) throw new Error('Chiave Gemini non valida.');
-            if (!res.ok) throw new Error('Errore HTTP ' + res.status);
-            const data = await res.json();
-            if (data.promptFeedback && data.promptFeedback.blockReason) throw new Error('Risposta bloccata dai filtri di sicurezza.');
-            const text = (data.candidates && data.candidates[0] && data.candidates[0].content.parts.map(p => p.text || '').join('')) || '';
-            if (!text) throw new Error('Risposta vuota da Gemini.');
-            return text;
+
+            let lastErr = null;
+            for (const model of gemModelsToTry()) {
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        const ctrl = new AbortController();
+                        const to = setTimeout(() => ctrl.abort(), 25000);
+                        let res;
+                        try {
+                            res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                                signal: ctrl.signal
+                            });
+                        } finally { clearTimeout(to); }
+
+                        if (res.status === 429) { lastErr = new Error('quota'); break; }          // quota: cambia modello
+                        if (res.status === 404) { lastErr = new Error('modello'); break; }         // modello assente: cambia
+                        if (res.status === 503 || res.status === 500) { lastErr = new Error('busy'); await geminiWait(800 * (attempt + 1)); continue; } // sovraccarico: riprova
+                        if (res.status === 400) throw new Error('badkey');                          // chiave/permessi
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+                        const data = await res.json();
+                        if (data.promptFeedback && data.promptFeedback.blockReason) throw new Error('blocked');
+                        const text = (data.candidates && data.candidates[0] && data.candidates[0].content.parts.map(p => p.text || '').join('')) || '';
+                        if (!text) throw new Error('empty');
+                        return text;
+                    } catch (e) {
+                        lastErr = e;
+                        const msg = String(e.message || e);
+                        if (e.name === 'AbortError' || /Failed to fetch|NetworkError|load failed/i.test(msg)) { await geminiWait(700 * (attempt + 1)); continue; } // rete: riprova
+                        if (/quota|modello/.test(msg)) break; // già gestiti sopra
+                        break; // badkey/blocked/empty/altro: non riprovare, prova prossimo modello
+                    }
+                }
+            }
+
+            const messages = {
+                quota: 'Quota Gemini esaurita su tutti i modelli disponibili, riprova più tardi.',
+                modello: 'Nessuno dei modelli configurati risulta disponibile con questa chiave.',
+                badkey: 'Chiave non valida o senza permessi per questo modello (spesso i modelli Pro richiedono fatturazione). Controlla la chiave o scegli un modello Flash.',
+                blocked: 'Risposta bloccata dai filtri di sicurezza.',
+                busy: 'I server Gemini sono sovraccarichi al momento, riprova tra poco.',
+                empty: 'Risposta vuota da Gemini.'
+            };
+            const key2 = lastErr ? String(lastErr.message || lastErr) : '';
+            throw new Error(messages[key2] || (lastErr ? lastErr.message : 'Errore sconosciuto'));
         }
 
         // Riassume tutti i dati disponibili in un testo compatto da passare
         // all'AI: obiettivi, ultime sessioni, fisico, umore.
+        /* ═══════════════════════════════════════════════════════════════
+           INFORTUNI / PAUSE: periodi da segnalare al Coach AI, per non
+           consigliare di aumentare il carico durante un recupero.
+           ═══════════════════════════════════════════════════════════════ */
+        const INJURIES_KEY = 'bcube_injuries';
+
+        function loadInjuries() {
+            try { return JSON.parse(localStorage.getItem(INJURIES_KEY)) || []; }
+            catch (e) { return []; }
+        }
+        function saveInjuriesData(arr) { localStorage.setItem(INJURIES_KEY, JSON.stringify(arr)); }
+
+        function toggleInjuryForm() {
+            const form = document.getElementById('injury-form');
+            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        }
+
+        function saveInjury() {
+            const start = document.getElementById('injury-start').value;
+            const end = document.getElementById('injury-end').value;
+            const note = document.getElementById('injury-note').value.trim();
+            if (!start || !note) { alert('Inserisci almeno la data di inizio e una nota.'); return; }
+            const list = loadInjuries();
+            list.push({ id: Date.now() + '-inj', start, end: end || null, note });
+            saveInjuriesData(list);
+            document.getElementById('injury-start').value = '';
+            document.getElementById('injury-end').value = '';
+            document.getElementById('injury-note').value = '';
+            toggleInjuryForm();
+            renderInjuryList();
+        }
+
+        function deleteInjury(id) {
+            saveInjuriesData(loadInjuries().filter(i => i.id !== id));
+            renderInjuryList();
+        }
+
+        function renderInjuryList() {
+            const mount = document.getElementById('injury-list');
+            const list = loadInjuries().slice().sort((a, b) => new Date(b.start) - new Date(a.start));
+            if (list.length === 0) {
+                mount.innerHTML = '<div class="session-meta">Nessun infortunio/pausa registrato.</div>';
+                return;
+            }
+            const today = new Date().toISOString().slice(0, 10);
+            mount.innerHTML = list.map(i => {
+                const ongoing = !i.end || i.end >= today;
+                const period = i.end ? `${i.start} → ${i.end}` : `dal ${i.start}, in corso`;
+                return `<div class="session-row">
+                    <div><div>${i.note}${ongoing ? ' <span style="color:var(--accent-orange);">● in corso</span>' : ''}</div><div class="session-meta">${period}</div></div>
+                    <button class="session-del" onclick="deleteInjury('${i.id}')">🗑️</button>
+                </div>`;
+            }).join('');
+        }
+
+        // Record personali: estratti direttamente dallo storico, nessun calcolo nuovo
+        function renderPersonalRecords() {
+            const history = loadHistory();
+            const kmEl = document.getElementById('rec-km');
+            const speedEl = document.getElementById('rec-speed');
+            const durEl = document.getElementById('rec-duration');
+            if (!kmEl) return;
+            if (history.length === 0) {
+                kmEl.innerText = speedEl.innerText = durEl.innerText = '—';
+                return;
+            }
+            const byKm = history.reduce((b, e) => (!b || e.km > b.km) ? e : b);
+            const bySpeed = history.reduce((b, e) => (!b || e.avgSpeed > b.avgSpeed) ? e : b);
+            const byDur = history.reduce((b, e) => (!b || e.durationSec > b.durationSec) ? e : b);
+            kmEl.innerText = byKm.km.toFixed(2) + ' km';
+            speedEl.innerText = bySpeed.avgSpeed.toFixed(1) + ' km/h';
+            durEl.innerText = formatHoursMinutes(byDur.durationSec);
+        }
+
+        // Banner "non ti alleni da X giorni": calcolo deterministico dallo
+        // storico, nessuna chiamata AI — soglia a 3 giorni.
+        function renderReminderBanner() {
+            const el = document.getElementById('reminder-banner');
+            if (!el) return;
+            const history = loadHistory();
+            if (history.length === 0) { el.style.display = 'none'; return; }
+            const last = history.reduce((b, e) => (!b || new Date(e.dateISO) > new Date(b.dateISO)) ? e : b);
+            const days = Math.floor((Date.now() - new Date(last.dateISO).getTime()) / (1000 * 3600 * 24));
+            if (days >= 3) {
+                el.style.display = 'block';
+                el.innerText = `⏰ Sono passati ${days} giorni dall'ultimo allenamento.`;
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
         function buildAiContextSummary() {
             const profile = loadProfile();
             const goals = loadGoals();
             const history = loadHistory().slice().sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO));
-            const recent = history.slice(0, 20);
-            const body = loadBodyHistory().slice().sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO)).slice(0, 10);
+            const recent = history.slice(0, 15);
+            const body = loadBodyHistory().slice().sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO)).slice(0, 6);
             const wellness = loadWellness();
+            const injuries = loadInjuries();
+            const today = new Date().toISOString().slice(0, 10);
 
             const goalsTxt = goals.length
                 ? goals.map(g => '- ' + g.description).join('\n')
@@ -2203,68 +2656,79 @@
             const sessionsTxt = recent.length
                 ? recent.map(e => {
                     const day = e.dateISO.slice(0, 10);
-                    const w = wellness[day] ? `, umore quel giorno: ${wellness[day].rating}/5★` : '';
-                    return `- ${day}: ${e.program}, ${formatHoursMinutes(e.durationSec)}, ${e.km.toFixed(2)} km, ${e.avgSpeed.toFixed(1)} km/h, ${Math.round(e.kcal)} kcal${w}`;
+                    const w = wellness[day] ? `, energia quel giorno: ${wellness[day].rating}/5★` : '';
+                    return `- ${day}: ${e.program}, ${formatHoursMinutes(e.durationSec)}, ${e.km.toFixed(2)} km, ${e.avgSpeed.toFixed(1)} km/h${w}`;
                 }).join('\n')
                 : '(nessuna sessione registrata ancora)';
 
             const bodyTxt = body.length
-                ? body.map(b => `- ${b.dateISO.slice(0, 10)}: ${b.weightKg} kg${b.bodyFatPct ? `, massa grassa ${b.bodyFatPct}%` : ''}`).join('\n')
-                : '(nessuna misurazione fisica registrata)';
+                ? body.map(b => `- ${b.dateISO.slice(0, 10)}: ${b.weightKg} kg${b.bodyFatPct ? `, MG ${b.bodyFatPct}%` : ''}`).join('\n')
+                : '(nessuna misurazione registrata)';
 
-            return `PROFILO: ${profile.name || 'utente'}, peso ${profile.weightKg || 'non impostato'} kg, altezza ${profile.heightCm || 'non impostata'} cm.
+            const activeInjuries = injuries.filter(i => !i.end || i.end >= today);
+            const injuriesTxt = activeInjuries.length
+                ? activeInjuries.map(i => `- ${i.note} (dal ${i.start}${i.end ? ' al ' + i.end : ', in corso'})`).join('\n')
+                : '(nessun infortunio/pausa attivo)';
 
-OBIETTIVI:
+            return `OBIETTIVI:
 ${goalsTxt}
 
-ULTIME SESSIONI (dalla più recente):
+SESSIONI RECENTI (dalla più recente):
 ${sessionsTxt}
 
-STORICO FISICO RECENTE:
-${bodyTxt}`;
+FISICO RECENTE:
+${bodyTxt}
+
+INFORTUNI/PAUSE ATTIVI:
+${injuriesTxt}`;
         }
 
+        const AI_RULES = `REGOLE DI RISPOSTA (obbligatorie):
+- Usa ESCLUSIVAMENTE i dati elencati sopra (sessioni, voti di energia 1-5★, fisico, infortuni). Non inventare né dedurre informazioni non presenti (non ipotizzare cause, umore, o eventi non riportati).
+- Sii sintetico: massimo 120 parole, frasi dirette, senza premesse né ripetizioni.
+- Se un infortuno/pausa è attivo, non consigliare di aumentare il carico.`;
+
         async function generateAiPlan() {
-            const statusEl = document.getElementById('ai-log-status');
+            const statusEl = document.getElementById('ai-plan-status');
             if (!getAiKey()) { statusEl.innerText = '⚠️ Inserisci prima la chiave Gemini in Connessioni.'; return; }
-            statusEl.innerText = '⏳ Genero il piano di allenamento...';
+            statusEl.innerText = '⏳ Genero il piano...';
             try {
                 const context = buildAiContextSummary();
-                const prompt = `Sei un personal trainer esperto di corsa e camminata su tapis roulant. Analizza questi dati e proponi un PIANO DI ALLENAMENTO INIZIALE realistico per raggiungere gli obiettivi indicati, tenendo conto della forma fisica attuale, della frequenza di allenamento recente e dell'umore/energia riportati (bassa energia frequente = piano più prudente).
+                const prompt = `Sei un personal trainer per corsa/camminata su tapis roulant. Proponi un piano di allenamento settimanale (giorni, durata, intensità) coerente con gli obiettivi e la situazione riportata.
 
 ${context}
 
-Rispondi in italiano, in formato leggibile con paragrafi brevi e/o elenchi puntati: 1) valutazione sintetica dello stato attuale, 2) piano settimanale proposto (giorni, durata, intensità indicativa), 3) 2-3 consigli pratici.`;
+${AI_RULES}
+Formato risposta: elenco puntato breve, niente introduzioni.`;
                 const text = await geminiCallSimple(prompt);
                 const log = loadAiLog();
                 log.push({ id: Date.now() + '-ai', dateISO: new Date().toISOString(), type: 'plan', content: text });
                 saveAiLogData(log);
                 statusEl.innerText = '✅ Piano generato.';
-                renderAiLog();
+                renderAiSections();
             } catch (e) {
                 statusEl.innerText = '⚠️ ' + e.message;
             }
         }
 
         async function generateAiAnalysis() {
-            const statusEl = document.getElementById('ai-log-status');
+            const statusEl = document.getElementById('ai-analysis-status');
             if (!getAiKey()) { statusEl.innerText = '⚠️ Inserisci prima la chiave Gemini in Connessioni.'; return; }
             statusEl.innerText = '⏳ Analizzo i progressi...';
             try {
                 const context = buildAiContextSummary();
-                const prevPlan = loadAiLog().slice().reverse().find(l => l.type === 'plan');
-                const prompt = `Sei un personal trainer. Analizza i progressi dell'utente verso i suoi obiettivi, usando questi dati (comprese le sessioni recenti, il fisico e l'umore/energia riportato — bassa energia può spiegare performance più basse anche con buona costanza).
+                const prompt = `Sei un personal trainer. Valuta i progressi verso gli obiettivi usando i dati sotto: quantità di sessioni, velocità media nel tempo, coerenza con gli obiettivi, ed eventuale correlazione con l'energia riportata (★) e il fisico.
 
 ${context}
 
-${prevPlan ? 'PIANO PRECEDENTEMENTE SUGGERITO:\n' + prevPlan.content + '\n\n' : ''}
-Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel periodo, qualità/intensità media, andamento della velocità media, coerenza con gli obiettivi), 2) valutazione se il fisico sta seguendo l'andamento atteso rispetto alle performance, 3) suggerimenti concreti per avvicinarsi agli obiettivi, aggiornando il piano se necessario.`;
+${AI_RULES}
+Formato risposta: 3 righe max — 1) stato sintetico, 2) un dato numerico rilevante, 3) un suggerimento concreto.`;
                 const text = await geminiCallSimple(prompt);
                 const log = loadAiLog();
                 log.push({ id: Date.now() + '-ai', dateISO: new Date().toISOString(), type: 'analysis', content: text });
                 saveAiLogData(log);
                 statusEl.innerText = '✅ Analisi generata.';
-                renderAiLog();
+                renderAiSections();
             } catch (e) {
                 statusEl.innerText = '⚠️ ' + e.message;
             }
@@ -2272,29 +2736,53 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
 
         function deleteAiLogEntry(id) {
             saveAiLogData(loadAiLog().filter(l => l.id !== id));
-            renderAiLog();
+            renderAiSections();
         }
 
-        function renderAiLog() {
-            const mount = document.getElementById('ai-log-list');
+        function aiCardHtml(l) {
+            const d = new Date(l.dateISO);
+            const dateStr = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            const esc = (l.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<div style="border:1px solid var(--border-color); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--bg-primary);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span class="session-meta">${dateStr}</span>
+                    <button class="session-del" onclick="deleteAiLogEntry('${l.id}')">🗑️</button>
+                </div>
+                <div style="font-size:12px; white-space:pre-wrap; line-height:1.5;">${esc}</div>
+            </div>`;
+        }
+
+        function toggleAiHistory(type) {
+            const el = document.getElementById('ai-' + type + '-history');
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        }
+
+        // Piano e Analisi sono resi separatamente: solo l'ultimo espanso,
+        // il resto dietro un "▼ Storico" a tendina — per non far diventare
+        // la pagina interminabile con tante generazioni nel tempo.
+        function renderAiSections() {
             const log = loadAiLog().slice().sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO));
-            if (log.length === 0) {
-                mount.innerHTML = '<div class="session-meta">Nessuna analisi generata ancora.</div>';
-                return;
-            }
-            mount.innerHTML = log.map(l => {
-                const d = new Date(l.dateISO);
-                const dateStr = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-                const badge = l.type === 'plan' ? '📋 Piano' : '📈 Analisi';
-                const esc = (l.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return `<div style="border:1px solid var(--border-color); border-radius:10px; padding:10px; margin-bottom:10px; background:var(--bg-primary);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span style="font-size:11px; font-weight:700; color:var(--accent-blue);">${badge} · ${dateStr}</span>
-                        <button class="session-del" onclick="deleteAiLogEntry('${l.id}')">🗑️</button>
-                    </div>
-                    <div style="font-size:12px; white-space:pre-wrap; line-height:1.5;">${esc}</div>
-                </div>`;
-            }).join('');
+            ['plan', 'analysis'].forEach(type => {
+                const items = log.filter(l => l.type === type);
+                const latestMount = document.getElementById('ai-' + type + '-latest');
+                const historyToggle = document.getElementById('ai-' + type + '-history-toggle');
+                const historyMount = document.getElementById('ai-' + type + '-history');
+                if (items.length === 0) {
+                    latestMount.innerHTML = `<div class="session-meta">Nessun${type === 'plan' ? ' piano generato' : 'a analisi generata'} ancora.</div>`;
+                    historyToggle.style.display = 'none';
+                    historyMount.style.display = 'none';
+                    return;
+                }
+                latestMount.innerHTML = aiCardHtml(items[0]);
+                if (items.length > 1) {
+                    historyToggle.style.display = 'block';
+                    historyToggle.innerText = `▼ Storico ${type === 'plan' ? 'piani' : 'analisi'} precedenti (${items.length - 1})`;
+                    historyMount.innerHTML = items.slice(1).map(aiCardHtml).join('');
+                } else {
+                    historyToggle.style.display = 'none';
+                    historyMount.style.display = 'none';
+                }
+            });
         }
 
         /* ═══════════════════════════════════════════════════════════════
@@ -2311,7 +2799,6 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
         function saveDriveSettings() {
             const s = {
                 cid: document.getElementById('dCid').value.trim(),
-                akey: document.getElementById('dKey').value.trim(),
                 on: loadDriveSettings().on || false
             };
             localStorage.setItem(DRIVE_SETTINGS_KEY, JSON.stringify(s));
@@ -2319,7 +2806,6 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
         function loadDriveSettingsIntoForm() {
             const s = loadDriveSettings();
             document.getElementById('dCid').value = s.cid || '';
-            document.getElementById('dKey').value = s.akey || '';
         }
 
         function collectAllData() {
@@ -2330,6 +2816,7 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
                 goals: loadGoals(),
                 wellness: loadWellness(),
                 aiLog: loadAiLog(),
+                injuries: loadInjuries(),
                 updated: new Date().toISOString()
             };
         }
@@ -2340,6 +2827,7 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
             if (d.goals) saveGoalsData(d.goals);
             if (d.wellness) saveWellnessData(d.wellness);
             if (d.aiLog) saveAiLogData(d.aiLog);
+            if (d.injuries) saveInjuriesData(d.injuries);
         }
 
         function loadGSI(cb) {
@@ -2453,8 +2941,10 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
         function switchView(view) {
             document.getElementById('view-workout').classList.toggle('active', view === 'workout');
             document.getElementById('view-history').classList.toggle('active', view === 'history');
+            document.getElementById('view-support').classList.toggle('active', view === 'support');
             document.getElementById('nav-workout').classList.toggle('active', view === 'workout');
             document.getElementById('nav-history').classList.toggle('active', view === 'history');
+            document.getElementById('nav-support').classList.toggle('active', view === 'support');
             if (view === 'history') renderHistoryViews();
         }
 
@@ -2731,7 +3221,10 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
             renderBodyHistory();
             renderGoalList();
             renderWellnessList();
-            renderAiLog();
+            renderAiSections();
+            renderInjuryList();
+            renderPersonalRecords();
+            renderReminderBanner();
         }
 
         function handleResetButtonClick() {
@@ -2862,12 +3355,17 @@ Rispondi in italiano con: 1) parametri chiave (quantità di allenamenti nel peri
         /* ══ PWA: manifest generato a runtime (URL assoluti) + service worker ══ */
         (function(){
             try{
-                const ICON192="data:image/png;base64,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";
-                const ICON512="data:image/png;base64,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";
-                const man={name:"Bcube Dashboard",short_name:"Bcube",display:"standalone",
+                const ICON192="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACOklEQVR4nO3UIUoGYRRGYUfchKCDO7CYJllch/1vdjHL7MHsLkwGk0sQLIK7cA3O+eFj4Hn6hTcc7jQv6wlsdTp6APsmIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASM5GD9jicPHxcPk+esXxPX3dvf5ej17xPz4QiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiGSal3X0hsEer97uzz+33b783Dx/3x5zzd74QCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiCSaV7W0RvYMR+IREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZH8AbX/ECbsgNa4AAAAAElFTkSuQmCC";
+                const ICON512="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAHcElEQVR4nO3XoUlFARiGYY84ghhvEQcQTCcJVqsLGUROcQKTK1icw2ITiziGG8gtlx95n2eCr718y27djgDoOZ4eAMAMAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIg6mR7AYT2cv92dvU+v4L96/r56/LqeXsGheAAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABAlAABRAgAQJQAAUQIAECUAAFECABC17NZtegPs6/b04+nidXrFX+4/b15+LqdXwF48AIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgCgBAIgSAIAoAQCIEgCAKAEAiBIAgKhlt27TGwAY4AEARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARAkAQJQAAEQJAECUAABECQBAlAAARP0CSs0SpkahuLMAAAAASUVORK5CYII=";
+                const man={name:"Tapis Dashboard",short_name:"Tapis",display:"standalone",
                     start_url:location.href.split("#")[0],scope:location.href.replace(/[^/]*$/,""),
                     background_color:"#0f172a",theme_color:"#1e3a8a",
-                    icons:[{src:ICON192,sizes:"192x192",type:"image/png"},{src:ICON512,sizes:"512x512",type:"image/png"}]};
+                    icons:[
+                        {src:ICON192,sizes:"192x192",type:"image/png",purpose:"any"},
+                        {src:ICON192,sizes:"192x192",type:"image/png",purpose:"maskable"},
+                        {src:ICON512,sizes:"512x512",type:"image/png",purpose:"any"},
+                        {src:ICON512,sizes:"512x512",type:"image/png",purpose:"maskable"}
+                    ]};
                 const l=document.createElement("link");l.rel="manifest";
                 l.href="data:application/manifest+json,"+encodeURIComponent(JSON.stringify(man));
                 document.head.appendChild(l);
