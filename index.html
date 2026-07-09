@@ -277,18 +277,21 @@
         .header-nav {
             display: flex;
             gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
         .header-nav button {
             border: 1px solid rgba(255,255,255,0.25);
             background: rgba(255,255,255,0.1);
             color: rgba(255,255,255,0.75);
-            padding: 7px 13px;
+            padding: 7px 12px;
             border-radius: 9px;
             font-size: 12.5px;
             font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
         }
+        #nav-support { padding-left: 11px; padding-right: 11px; }
         .header-nav button.active {
             background: #fff;
             color: var(--bg-primary);
@@ -739,7 +742,8 @@
         <div class="header-nav">
             <button id="nav-workout" class="active" onclick="switchView('workout')">🏃 Run</button>
             <button id="nav-history" onclick="switchView('history')">📊 Storico</button>
-            <button id="nav-support" onclick="switchView('support')">❓ Supporto</button>
+            <button id="nav-io" onclick="switchView('io')">👤 Io</button>
+            <button id="nav-support" onclick="switchView('support')" title="Supporto" aria-label="Supporto">❓</button>
         </div>
         <div id="status-tag" style="font-size: 12px; color: var(--text-muted);"></div>
     </header>
@@ -903,87 +907,6 @@
 
     <div id="view-history" class="view">
         <div class="history-wrap">
-
-            <div class="panel">
-                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">👤 Profilo</label>
-                <div class="profile-grid">
-                    <div class="full">
-                        <label>Nome</label>
-                        <input type="text" id="profile-name" placeholder="Il tuo nome">
-                    </div>
-                    <div>
-                        <label>Peso (kg)</label>
-                        <input type="number" id="profile-weight" step="0.1" placeholder="es. 75">
-                    </div>
-                    <div>
-                        <label>Altezza (cm)</label>
-                        <input type="number" id="profile-height" step="1" placeholder="es. 175">
-                    </div>
-                    <div class="full">
-                        <label>Massa grassa % (opzionale — la massa magra si calcola da sola)</label>
-                        <input type="number" id="profile-bodyfat" step="0.1" placeholder="es. 18">
-                    </div>
-                    <div class="full">
-                        <label>Data di inizio allenamenti / possesso del tapis (evita di mostrare anni/mesi vuoti prima)</label>
-                        <input type="date" id="profile-startdate">
-                    </div>
-                </div>
-                <button class="btn btn-start" style="margin-top:10px;" onclick="saveProfile()">Salva Profilo</button>
-                <div id="profile-status" style="font-size:11px; color:var(--text-muted); margin-top:6px;"></div>
-            </div>
-
-            <div class="panel">
-                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">🔗 Connessioni</label>
-
-                <div class="profile-grid">
-                    <div class="full">
-                        <label>Gemini API Key (Google AI Studio) — per il piano di allenamento e l'analisi dei progressi</label>
-                        <input type="password" id="ai-key" placeholder="Incolla qui la tua Gemini API Key..." onchange="saveAiKey()">
-                    </div>
-                    <div class="full">
-                        <label>Modello Gemini</label>
-                        <select id="ai-model" onchange="saveAiModel()" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-main);"></select>
-                    </div>
-                </div>
-                <div id="ai-key-status" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Senza chiave: Coach AI non disponibile.</div>
-
-                <div class="profile-grid" style="margin-top:14px;">
-                    <div class="full">
-                        <label>CLIENT_ID (Google Cloud)</label>
-                        <input type="text" id="dCid" placeholder="xxxx.apps.googleusercontent.com" onchange="saveDriveSettings()">
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                    <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="driveConnect()">🔗 Collega Drive</button>
-                    <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveUpload()">☁️ Salva ora</button>
-                    <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveImport()">⬇️ Importa da Drive</button>
-                </div>
-                <div id="driveStatus" style="font-size:11px; color:var(--text-muted); margin-top:8px;">Non connesso.</div>
-
-                <div class="profile-grid" style="margin-top:14px;">
-                    <div class="full">
-                        <label>YouTube Data API Key (opzionale — solo riserva se la libreria video interna si esaurisce)</label>
-                        <input type="password" id="yt-fallback-key" placeholder="Incolla qui, solo se vuoi la ricerca live di riserva..." onchange="saveYtFallbackKey()">
-                    </div>
-                </div>
-                <div id="yt-fallback-status" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Senza chiave: si usa solo la libreria video interna.</div>
-
-                <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
-                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:6px;">💾 Backup locale completo</label>
-                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Profilo, obiettivi, storico, fisico, benessere, infortuni e analisi AI in un unico file — utile anche senza Drive, o se cambi telefono.</div>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="exportFullBackup()">⬇️ Esporta backup (.json)</button>
-                        <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="document.getElementById('import-backup-file').click()">⬆️ Importa backup</button>
-                        <input type="file" id="import-backup-file" accept="application/json" style="display:none;" onchange="importFullBackup(event)">
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">💪 Storico Fisico</label>
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Ogni volta che aggiorni peso/massa grassa nel Profilo e premi "Salva Profilo", viene registrata qui una nuova misurazione datata.</div>
-                <div id="body-history-list"></div>
-            </div>
 
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1209,6 +1132,93 @@
         </div>
     </div>
 
+    <div id="view-io" class="view">
+        <div class="history-wrap">
+
+            <div class="panel">
+                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">👤 Profilo</label>
+                <div class="profile-grid">
+                    <div class="full">
+                        <label>Nome</label>
+                        <input type="text" id="profile-name" placeholder="Il tuo nome">
+                    </div>
+                    <div>
+                        <label>Peso (kg)</label>
+                        <input type="number" id="profile-weight" step="0.1" placeholder="es. 75">
+                    </div>
+                    <div>
+                        <label>Altezza (cm)</label>
+                        <input type="number" id="profile-height" step="1" placeholder="es. 175">
+                    </div>
+                    <div class="full">
+                        <label>Massa grassa % (opzionale — la massa magra si calcola da sola)</label>
+                        <input type="number" id="profile-bodyfat" step="0.1" placeholder="es. 18">
+                    </div>
+                    <div class="full">
+                        <label>Data di inizio allenamenti / possesso del tapis (evita di mostrare anni/mesi vuoti prima)</label>
+                        <input type="date" id="profile-startdate">
+                    </div>
+                </div>
+                <button class="btn btn-start" style="margin-top:10px;" onclick="saveProfile()">Salva Profilo</button>
+                <div id="profile-status" style="font-size:11px; color:var(--text-muted); margin-top:6px;"></div>
+            </div>
+
+            <div class="panel">
+                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">🔗 Connessioni</label>
+
+                <div class="profile-grid">
+                    <div class="full">
+                        <label>Gemini API Key (Google AI Studio) — per il piano di allenamento e l'analisi dei progressi</label>
+                        <input type="password" id="ai-key" placeholder="Incolla qui la tua Gemini API Key..." onchange="saveAiKey()">
+                    </div>
+                    <div class="full">
+                        <label>Modello Gemini</label>
+                        <select id="ai-model" onchange="saveAiModel()" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-main);"></select>
+                    </div>
+                </div>
+                <div id="ai-key-status" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Senza chiave: Coach AI non disponibile.</div>
+
+                <div class="profile-grid" style="margin-top:14px;">
+                    <div class="full">
+                        <label>CLIENT_ID (Google Cloud)</label>
+                        <input type="text" id="dCid" placeholder="xxxx.apps.googleusercontent.com" onchange="saveDriveSettings()">
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                    <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="driveConnect()">🔗 Collega Drive</button>
+                    <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveUpload()">☁️ Salva ora</button>
+                    <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveImport()">⬇️ Importa da Drive</button>
+                </div>
+                <div id="driveStatus" style="font-size:11px; color:var(--text-muted); margin-top:8px;">Non connesso.</div>
+
+                <div class="profile-grid" style="margin-top:14px;">
+                    <div class="full">
+                        <label>YouTube Data API Key (opzionale — solo riserva se la libreria video interna si esaurisce)</label>
+                        <input type="password" id="yt-fallback-key" placeholder="Incolla qui, solo se vuoi la ricerca live di riserva..." onchange="saveYtFallbackKey()">
+                    </div>
+                </div>
+                <div id="yt-fallback-status" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Senza chiave: si usa solo la libreria video interna.</div>
+
+                <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
+                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:6px;">💾 Backup locale completo</label>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Profilo, obiettivi, storico, fisico, benessere, infortuni e analisi AI in un unico file — utile anche senza Drive, o se cambi telefono.</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="exportFullBackup()">⬇️ Esporta backup (.json)</button>
+                        <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="document.getElementById('import-backup-file').click()">⬆️ Importa backup</button>
+                        <input type="file" id="import-backup-file" accept="application/json" style="display:none;" onchange="importFullBackup(event)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">💪 Storico Fisico</label>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Ogni volta che aggiorni peso/massa grassa nel Profilo e premi "Salva Profilo", viene registrata qui una nuova misurazione datata.</div>
+                <div id="body-history-list"></div>
+            </div>
+
+        </div>
+    </div>
+
     <div id="view-support" class="view">
         <div class="history-wrap">
 
@@ -1218,7 +1228,8 @@
 
             <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">Le sezioni</label><table class="gtable">
                 <tr><td>🏃</td><td><b>Run</b> — scegli il programma (P1-P36 o M1 Manuale), avvia/pausa/reset, video di scenario in tempo reale, cruscotto live con segmento/velocità/pendenza, e il collegamento Bluetooth al tapis.</td></tr>
-                <tr><td>📊</td><td><b>Storico</b> — profilo, connessioni (AI/Drive/backup), storico fisico, obiettivi, riepilogo con grafico cliccabile, record personali, Coach AI (piano + analisi), sessioni, infortuni/pause, benessere giornaliero.</td></tr>
+                <tr><td>📊</td><td><b>Storico</b> — obiettivi, riepilogo con grafico cliccabile, record personali, Coach AI (piano + analisi), “Chiedi all'AI”, sessioni, infortuni/pause, benessere giornaliero.</td></tr>
+                <tr><td>👤</td><td><b>Io</b> — impostazioni: profilo, connessioni (chiave AI, Drive, YouTube), backup locale e storico fisico.</td></tr>
                 <tr><td>❓</td><td><b>Supporto</b> — questa pagina.</td></tr>
             </table></div>
 
@@ -1234,12 +1245,12 @@
             </table></div>
 
             <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">🤖 Coach AI (Gemini)</label>
-                <div class="hint">Serve una chiave gratuita da <b>aistudio.google.com</b> (vedi guida sotto), da incollare in <b>Storico → Connessioni</b>. "auto" prova da solo i modelli gratuiti disponibili in ordine. Le risposte sono sintetiche e basate solo sui dati che l'app registra (sessioni, voti di benessere, fisico) — non su supposizioni. Piano e Analisi restano separati, con lo storico delle generazioni precedenti dietro "▼ Storico" per non appesantire la pagina.</div>
+                <div class="hint">Serve una chiave gratuita da <b>aistudio.google.com</b> (vedi guida sotto), da incollare in <b>Io → Connessioni</b>. "auto" prova da solo i modelli gratuiti disponibili in ordine. Le risposte sono sintetiche e basate solo sui dati che l'app registra (sessioni, voti di benessere, fisico) — non su supposizioni. Piano e Analisi restano separati, con lo storico delle generazioni precedenti dietro "▼ Storico" per non appesantire la pagina.</div>
             </div>
 
             <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">💾 Backup & dati</label>
                 <div class="hint"><b>Dove sono i dati:</b> nel browser di questo dispositivo, non nel file dell'app. Aggiornare l'app (ricaricando un nuovo index.html su GitHub) non li tocca.<br><br>
-                <b>Drive</b> (Storico → Connessioni): dopo "Collega Drive", "Salva ora" carica tutto, "Importa da Drive" scarica e sovrascrive il locale.<br><br>
+                <b>Drive</b> (Io → Connessioni): dopo "Collega Drive", "Salva ora" carica tutto, "Importa da Drive" scarica e sovrascrive il locale.<br><br>
                 <b>Backup locale</b>: stesso pannello — Esporta/Importa un file .json con tutti i dati (profilo, storico, obiettivi, fisico, benessere, infortuni, analisi AI). Utile prima di cambiare telefono o come rete di sicurezza anche senza Drive.</div>
             </div>
 
@@ -1276,7 +1287,7 @@
 
                 <div style="font-weight:700; font-size:12.5px; margin-top:10px;">Fase D: Connettere l'app</div>
                 <table class="gtable">
-                    <tr><td>1</td><td>Vai su <b>Storico → Connessioni</b></td></tr>
+                    <tr><td>1</td><td>Vai su <b>Io → Connessioni</b></td></tr>
                     <tr><td>2</td><td>Incolla il Client ID nel campo <b>CLIENT_ID</b></td></tr>
                     <tr><td>3</td><td>Premi <b>"🔗 Collega Drive"</b> e autorizza col tuo account (ora sbloccato)</td></tr>
                 </table>
@@ -1286,7 +1297,7 @@
                     <tr><td>1</td><td>Vai su <b>aistudio.google.com/apikey</b></td></tr>
                     <tr><td>2</td><td>Clicca in alto a destra su <b>"Crea chiave"</b></td></tr>
                     <tr><td>3</td><td>Scegli/crea il progetto Google Cloud a cui associarla</td></tr>
-                    <tr><td>4</td><td>Genera la chiave e copiala nel campo <b>Gemini API Key</b> in Storico → Connessioni</td></tr>
+                    <tr><td>4</td><td>Genera la chiave e copiala nel campo <b>Gemini API Key</b> in Io → Connessioni</td></tr>
                 </table>
             </div>
 
@@ -2799,7 +2810,7 @@ ${injuriesTxt}`;
         async function generateAiPlan() {
             const statusEl = document.getElementById('ai-plan-status');
             if (!getAiKey()) { statusEl.innerText = '⚠️ Inserisci prima la chiave Gemini in Connessioni.'; return; }
-            statusEl.innerText = '⏳ Genero il piano...';
+            statusEl.innerText = '⏳ Genero il piano…';
             try {
                 const context = buildAiContextSummary();
                 const prompt = `Sei un personal trainer per corsa/camminata su tapis roulant. Proponi un piano di allenamento settimanale (giorni, durata, intensità) coerente con gli obiettivi e la situazione riportata.
@@ -2822,7 +2833,7 @@ Formato risposta: elenco puntato breve, niente introduzioni.`;
         async function generateAiAnalysis() {
             const statusEl = document.getElementById('ai-analysis-status');
             if (!getAiKey()) { statusEl.innerText = '⚠️ Inserisci prima la chiave Gemini in Connessioni.'; return; }
-            statusEl.innerText = '⏳ Analizzo i progressi...';
+            statusEl.innerText = '⏳ Analizzo i progressi…';
             try {
                 const context = buildAiContextSummary();
                 const prompt = `Sei un personal trainer. Valuta i progressi verso gli obiettivi usando i dati sotto: quantità di sessioni, velocità media nel tempo, coerenza con gli obiettivi, ed eventuale correlazione con l'energia riportata (★) e il fisico.
@@ -2852,7 +2863,7 @@ Formato risposta: 3 righe max — 1) stato sintetico, 2) un dato numerico rileva
             answerEl.innerHTML = '';
             if (!q) { statusEl.innerText = 'Scrivi prima una domanda.'; return; }
             if (!getAiKey()) { statusEl.innerText = '⚠️ Inserisci prima la chiave Gemini in Connessioni.'; return; }
-            statusEl.innerText = '🤔 Sto pensando...';
+            statusEl.innerText = '🤔 Sto pensando…';
             try {
                 const context = buildAiContextSummary();
                 const prompt = `Sei l'assistente della app Tapis (allenamento su tapis roulant). L'utente ti fa una domanda sui suoi dati di allenamento, obiettivi e progressi. Usa SOLO i dati qui sotto.
@@ -2993,6 +3004,10 @@ REGOLE:
         function loadDriveSettingsIntoForm() {
             const s = loadDriveSettings();
             document.getElementById('dCid').value = s.cid || '';
+            const st = document.getElementById('driveStatus');
+            if (st) st.innerText = s.on
+                ? "Configurato: a ogni avvio l'app si riconnette da sola, confronta i timestamp e carica la versione più recente (telefono e PC condividono così gli stessi dati). Auto-save attivo."
+                : 'Non connesso.';
         }
 
         /* Timestamp di CONTENUTO persistito: si aggiorna solo quando i dati
@@ -3060,7 +3075,7 @@ REGOLE:
                         driveSaveToken(t);
                         const settings = loadDriveSettings(); settings.on = true;
                         localStorage.setItem(DRIVE_SETTINGS_KEY, JSON.stringify(settings));
-                        document.getElementById('driveStatus').innerText = '✅ Connesso. Sincronizzo...';
+                        document.getElementById('driveStatus').innerText = '✅ Connesso. Sincronizzo…';
                         await driveSyncOnStart();
                     }
                 });
@@ -3173,11 +3188,13 @@ REGOLE:
         function switchView(view) {
             document.getElementById('view-workout').classList.toggle('active', view === 'workout');
             document.getElementById('view-history').classList.toggle('active', view === 'history');
+            document.getElementById('view-io').classList.toggle('active', view === 'io');
             document.getElementById('view-support').classList.toggle('active', view === 'support');
             document.getElementById('nav-workout').classList.toggle('active', view === 'workout');
             document.getElementById('nav-history').classList.toggle('active', view === 'history');
+            document.getElementById('nav-io').classList.toggle('active', view === 'io');
             document.getElementById('nav-support').classList.toggle('active', view === 'support');
-            if (view === 'history') renderHistoryViews();
+            if (view === 'history' || view === 'io') renderHistoryViews();
         }
 
         let selectedBucket = null; // se impostato (click su una colonna), filtra il Riepilogo su quel periodo
