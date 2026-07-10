@@ -869,6 +869,7 @@
             <!-- RIGA DI STATO VIDEO -->
             <div id="video-status"></div>
 
+            <div id="program-profile">
             <div class="visual-container">
                 <div class="chart-main">
                     <div class="y-axis left-axis">
@@ -901,6 +902,7 @@
                     <tbody id="program-table-body"></tbody>
                 </table>
             </div>
+            </div>
         </div>
     </div>
     </div><!-- /view-workout -->
@@ -916,9 +918,9 @@
                 <div id="goal-form" style="display:none; margin-bottom:14px; padding:12px; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-primary);">
                     <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Tipo di obiettivo</label>
                     <select id="goal-type" onchange="updateGoalFormFields()" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-main); margin-bottom:10px;">
-                        <option value="volume">Volume (es. tot km a settimana/mese/anno)</option>
-                        <option value="time_distance">Tempo su distanza (es. 4 km in meno di 30 min)</option>
-                        <option value="frequency">Frequenza (es. almeno 2 allenamenti a settimana)</option>
+                        <option value="volume">Volume (km)</option>
+                        <option value="time_distance">Tempo su distanza</option>
+                        <option value="frequency">Frequenza allenamenti</option>
                     </select>
 
                     <div id="goal-fields-volume" class="profile-grid">
@@ -1016,19 +1018,15 @@
                 <div id="bucket-kpi-hint" style="display:none; font-size:11px; color:var(--accent-blue); margin-bottom:8px; cursor:pointer;" onclick="clearBucketSelection()">🔍 Filtro attivo su una colonna del grafico — tocca qui per tornare al periodo intero</div>
                 <div class="summary-grid">
                     <div class="stat-box">
-                        <div class="stat-label">Km percorsi</div>
-                        <div id="sum-km" class="stat-value">0</div>
+                        <div class="stat-label">Tempo (min)</div>
+                        <div id="sum-time" class="stat-value">0</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Tempo</div>
-                        <div id="sum-time" class="stat-value">0h 0m</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Calorie</div>
+                        <div class="stat-label">Kcal</div>
                         <div id="sum-kcal" class="stat-value">0</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Vel. media</div>
+                        <div class="stat-label">Vel. Media (Km/h)</div>
                         <div id="sum-speed" class="stat-value">0</div>
                     </div>
                 </div>
@@ -1042,9 +1040,10 @@
             <div class="panel">
                 <label style="font-size:13px; font-weight:700; margin-bottom:8px; display:block;">🏆 Record Personali</label>
                 <div class="summary-grid" id="records-grid">
-                    <div class="stat-box"><div class="stat-label">Km più lunghi</div><div id="rec-km" class="stat-value">—</div></div>
-                    <div class="stat-box"><div class="stat-label">Velocità più alta</div><div id="rec-speed" class="stat-value">—</div></div>
-                    <div class="stat-box"><div class="stat-label">Sessione più lunga</div><div id="rec-duration" class="stat-value">—</div></div>
+                    <div class="stat-box"><div class="stat-label">Dist. maggiore (km)</div><div id="rec-km" class="stat-value">—</div></div>
+                    <div class="stat-box"><div class="stat-label">V. Med. maggiore (Km/h)</div><div id="rec-speed" class="stat-value">—</div></div>
+                    <div class="stat-box"><div class="stat-label">Sess. maggiore (min)</div><div id="rec-duration" class="stat-value">—</div></div>
+                    <div class="stat-box"><div class="stat-label">Dist. totale (km)</div><div id="rec-total" class="stat-value">—</div></div>
                 </div>
             </div>
 
@@ -1188,8 +1187,11 @@
                     <button class="btn btn-start" style="padding:8px 14px; font-size:12px;" onclick="driveConnect()">🔗 Collega Drive</button>
                     <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveUpload()">☁️ Salva ora</button>
                     <button class="btn btn-reset" style="padding:8px 14px; font-size:12px;" onclick="driveImport()">⬇️ Importa da Drive</button>
+                    <button class="btn btn-reset" style="padding:8px 14px; font-size:12px; background-color:#475569;" onclick="driveDisconnect()">🔌 Scollega dispositivo</button>
+                    <button class="btn btn-reset" style="padding:8px 14px; font-size:12px; background-color:#7f1d1d;" onclick="driveDelete()">🗑️ Elimina backup</button>
                 </div>
                 <div id="driveStatus" style="font-size:11px; color:var(--text-muted); margin-top:8px;">Non connesso.</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:6px;"><b>Scollega dispositivo</b>: stacca solo questo dispositivo, il backup su Drive e gli altri restano intatti. <b>Elimina backup</b>: cancella il file su Drive (sparisce da tutti i dispositivi, con conferma).</div>
 
                 <div class="profile-grid" style="margin-top:14px;">
                     <div class="full">
@@ -1619,6 +1621,7 @@
                 history.push(entry);
                 saveHistoryData(history);
                 renderHistoryViews();
+                askSessionFeeling(entry.id, entry.dateISO);
             }
 
             btLiveMode = false;
@@ -1674,13 +1677,16 @@
             const progName = document.getElementById('program-select').value;
             currentProgram = programs.find(p => p.name === progName);
             const manualWrapper = document.getElementById('manual-picker-wrapper');
+            const profileEl = document.getElementById('program-profile');
 
             if (currentProgram.isManual) {
                 manualWrapper.style.display = 'flex';
+                if (profileEl) profileEl.style.display = 'none'; // manuale: profilo piatto, grafico e tabella inutili
                 applyManualSelection(); // usa i valori di default/attuali dei due select
                 return; // applyManualSelection già chiama calculateSegments/preview/video
             } else {
                 manualWrapper.style.display = 'none';
+                if (profileEl) profileEl.style.display = '';
                 manualCategory = null;
             }
 
@@ -2178,6 +2184,7 @@
             history.push(entry);
             saveHistoryData(history);
             renderHistoryViews();
+            askSessionFeeling(entry.id, entry.dateISO);
         }
 
         function deleteSession(id) {
@@ -2220,10 +2227,18 @@
         }
 
         function clearHistoryConfirm() {
-            if (confirm('Cancellare TUTTO lo storico allenamenti? Non si può annullare.')) {
-                saveHistoryData([]);
-                renderHistoryViews();
+            if (!confirm('Cancellare TUTTO lo storico allenamenti su QUESTO dispositivo? Non si può annullare.')) return;
+            const driveOn = loadDriveSettings().on;
+            if (driveOn && !confirm('Drive è collegato. Vuoi che questa cancellazione si propaghi anche agli ALTRI dispositivi tramite Drive?\n\nOK = sì, propaga (verrà sovrascritto il backup condiviso).\nAnnulla = no, scollega questo dispositivo così gli altri e il backup su Drive restano intatti.')) {
+                // Scollega questo dispositivo: la cancellazione resta locale e non sovrascrive il backup condiviso
+                driveClearToken();
+                try { localStorage.removeItem(SYNCED_ONCE_KEY); } catch (e) {}
+                const s = loadDriveSettings(); s.on = false;
+                localStorage.setItem(DRIVE_SETTINGS_KEY, JSON.stringify(s));
+                const st = document.getElementById('driveStatus'); if (st) st.innerText = 'Dispositivo scollegato da Drive (il backup remoto è intatto).';
             }
+            saveHistoryData([]);
+            renderHistoryViews();
         }
 
         // Inserimento manuale di una sessione fatta con un programma numerato
@@ -2285,6 +2300,7 @@
             history.push(entry);
             saveHistoryData(history);
             renderHistoryViews();
+            askSessionFeeling(entry.id, entry.dateISO);
 
             document.getElementById('manual-entry-minutes').value = '';
             document.getElementById('manual-entry-km').value = '';
@@ -2497,6 +2513,34 @@
             wellness[dateVal] = { rating: n };
             saveWellnessData(wellness);
             renderWellnessList();
+        }
+
+        // Al termine di ogni sessione chiediamo "come ti sei sentito": il voto
+        // viene legato alla sessione (e.feeling) e vale anche come benessere del
+        // giorno, così le due cose non sono più slegate.
+        function askSessionFeeling(id, dateISO) {
+            const dayKey = new Date(dateISO).toISOString().slice(0, 10);
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+            const card = document.createElement('div');
+            card.style.cssText = 'background:var(--bg-secondary);color:var(--text-main);border:1px solid var(--border-color);border-radius:14px;padding:18px;max-width:320px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);';
+            card.innerHTML = '<div style="font-size:15px;font-weight:700;margin-bottom:4px;">Come ti sei sentito?</div>' +
+                '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Vota questa sessione di allenamento.</div>' +
+                '<div id="fl-stars" style="font-size:34px;letter-spacing:6px;"></div>' +
+                '<div style="margin-top:14px;"><button id="fl-skip" style="background:transparent;border:1px solid var(--border-color);color:var(--text-muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:12px;">Salta</button></div>';
+            ov.appendChild(card); document.body.appendChild(ov);
+            const starsEl = card.querySelector('#fl-stars');
+            function draw(n) { [...starsEl.children].forEach((c, idx) => { c.textContent = idx < n ? '★' : '☆'; c.style.color = idx < n ? 'var(--accent-orange)' : 'var(--border-color)'; }); }
+            for (let i = 1; i <= 5; i++) { const sp = document.createElement('span'); sp.style.cursor = 'pointer'; sp.onmouseover = () => draw(i); sp.onclick = () => commit(i); starsEl.appendChild(sp); }
+            draw(0);
+            function commit(n) {
+                const hist = loadHistory(); const it = hist.find(x => x.id === id); if (it) { it.feeling = n; saveHistoryData(hist); }
+                const w = loadWellness(); w[dayKey] = { rating: n }; saveWellnessData(w);
+                close(); renderHistoryViews();
+            }
+            function close() { ov.remove(); }
+            card.querySelector('#fl-skip').onclick = close;
+            ov.onclick = e => { if (e.target === ov) close(); };
         }
 
         function deleteWellnessEntry(dateKey) {
@@ -2728,17 +2772,21 @@
             const kmEl = document.getElementById('rec-km');
             const speedEl = document.getElementById('rec-speed');
             const durEl = document.getElementById('rec-duration');
+            const totEl = document.getElementById('rec-total');
             if (!kmEl) return;
             if (history.length === 0) {
                 kmEl.innerText = speedEl.innerText = durEl.innerText = '—';
+                if (totEl) totEl.innerText = '—';
                 return;
             }
             const byKm = history.reduce((b, e) => (!b || e.km > b.km) ? e : b);
             const bySpeed = history.reduce((b, e) => (!b || e.avgSpeed > b.avgSpeed) ? e : b);
             const byDur = history.reduce((b, e) => (!b || e.durationSec > b.durationSec) ? e : b);
-            kmEl.innerText = byKm.km.toFixed(2) + ' km';
-            speedEl.innerText = bySpeed.avgSpeed.toFixed(1) + ' km/h';
-            durEl.innerText = formatHoursMinutes(byDur.durationSec);
+            const totalKm = history.reduce((s, e) => s + e.km, 0);
+            kmEl.innerText = byKm.km.toFixed(1);
+            speedEl.innerText = bySpeed.avgSpeed.toFixed(1);
+            durEl.innerText = (byDur.durationSec / 60).toFixed(1);
+            if (totEl) totEl.innerText = totalKm.toFixed(1);
         }
 
         // Banner "non ti alleni da X giorni": calcolo deterministico dallo
@@ -3123,6 +3171,28 @@ REGOLE:
             } catch (e) { alert('Errore importazione: ' + e.message); }
         };
 
+        // Scollega SOLO questo dispositivo: non tocca il backup su Drive né gli
+        // altri dispositivi; ferma la sync qui e dimentica il token locale.
+        window.driveDisconnect = async () => {
+            if (!confirm('Scollegare SOLO questo dispositivo da Drive?\n\nIl backup su Drive e gli altri dispositivi restano intatti. Potrai ricollegarti quando vuoi.')) return;
+            driveClearToken();
+            try { localStorage.removeItem(SYNCED_ONCE_KEY); } catch (e) {}
+            const s = loadDriveSettings(); s.on = false;
+            localStorage.setItem(DRIVE_SETTINGS_KEY, JSON.stringify(s));
+            const st = document.getElementById('driveStatus'); if (st) st.innerText = 'Dispositivo scollegato da Drive (il backup remoto è intatto).';
+        };
+
+        // Elimina il backup su Drive: riguarda TUTTI i dispositivi collegati.
+        window.driveDelete = async (silent) => {
+            if (!DTOKEN) { if (!silent) alert('Connettiti prima a Drive.'); return; }
+            if (!silent && !confirm('Eliminare il backup da Google Drive?\n\nATTENZIONE: sparirà da TUTTI i dispositivi collegati a questo account, non solo da questo. I dati locali di questo dispositivo restano finché non li cancelli a parte.')) return;
+            try {
+                const f = await driveFind();
+                if (f) await fetch('https://www.googleapis.com/drive/v3/files/' + f.id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + DTOKEN } });
+                if (!silent) { const st = document.getElementById('driveStatus'); if (st) st.innerText = '🗑️ Backup eliminato da Drive.'; alert('Backup eliminato da Drive.'); }
+            } catch (e) { if (!silent) alert('Errore eliminazione: ' + e.message); }
+        };
+
         function tryDriveAuto() {
             const s = loadDriveSettings();
             if (!(s.on && s.cid) || window.location.protocol === 'file:') return;
@@ -3276,10 +3346,9 @@ REGOLE:
             const totalKcal = filtered.reduce((s, e) => s + e.kcal, 0);
             const avgSpeed = totalSec > 0 ? totalKm / (totalSec / 3600) : 0;
 
-            document.getElementById('sum-km').innerText = totalKm.toFixed(1);
-            document.getElementById('sum-time').innerText = formatHoursMinutes(totalSec);
+            document.getElementById('sum-time').innerText = (totalSec / 60).toFixed(1);
             document.getElementById('sum-kcal').innerText = Math.round(totalKcal);
-            document.getElementById('sum-speed').innerText = avgSpeed.toFixed(1) + ' km/h';
+            document.getElementById('sum-speed').innerText = avgSpeed.toFixed(1);
 
             document.getElementById('bucket-kpi-hint').style.display = selectedBucket ? 'block' : 'none';
         }
