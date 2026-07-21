@@ -276,12 +276,23 @@
 
         .header-nav {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             max-width: 1100px;
             margin: 0 auto 12px;
         }
-        @media (max-width: 640px) { .header-nav { grid-template-columns: repeat(3, 1fr); } }
+        .hdr-btn {
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.10);
+            color: rgba(255,255,255,0.85);
+            padding: 7px 10px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .hdr-btn.active { background: var(--highlight); color: #fff; border-color: transparent; }
         .header-nav button {
             border: 1px solid var(--border-color);
             background: var(--bg-secondary);
@@ -742,15 +753,17 @@
             <div class="logo-box">Tappy</div>
             <div class="logo-text"></div>
         </div>
-        <div id="status-tag" style="font-size: 12px; color: var(--text-muted); text-align:right;"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div id="status-tag" style="font-size: 12px; color: var(--text-muted); text-align:right;"></div>
+            <button id="nav-io" class="hdr-btn" onclick="switchView('io')" title="Io">👤 Io</button>
+            <button id="nav-support" class="hdr-btn" onclick="switchView('support')" title="Guida">❓</button>
+        </div>
     </header>
     <div class="header-nav">
-        <button id="nav-workout" class="active" onclick="switchView('workout')">🏃 Run</button>
+        <button id="nav-workout" class="active" onclick="switchView('workout')">🏃 Corri</button>
         <button id="nav-routes" onclick="switchView('routes')">🛣️ Percorsi</button>
         <button id="nav-tracker" onclick="switchView('tracker')">⏺ Registra</button>
         <button id="nav-history" onclick="switchView('history')">📊 Storico</button>
-        <button id="nav-io" onclick="switchView('io')">👤 Io</button>
-        <button id="nav-support" onclick="switchView('support')" title="Supporto">❓ Guida</button>
     </div>
 
     <div id="view-workout" class="view active">
@@ -1342,6 +1355,14 @@
                 <tr><td>6</td><td>Serve la Fatturazione attiva sul progetto, ma il credito gratuito mensile di Google copre ampiamente l'uso personale.</td></tr>
                 <tr><td>7</td><td>Incollala in <b>Io → 🗺️ Google Maps</b>. Nota: funziona solo da <b>https://</b> (GitHub Pages ok), non da file://. Senza chiave restano mini-mappa disegnata e altimetria GPS.</td></tr>
             </table></div>
+
+            <div class="panel"><label style="font-size:15px; font-weight:700; margin-bottom:8px; display:block;">🌐 Pubblicare su https con GitHub Pages (prerequisito per Bluetooth e API)</label><table class="gtable">
+                <tr><td>1</td><td>Crea un account su <b>github.com</b> e un repository pubblico (es. "tappy").</td></tr>
+                <tr><td>2</td><td>Carica questo file rinominato <b>index.html</b> (Add file → Upload files).</td></tr>
+                <tr><td>3</td><td><b>Settings → Pages → Branch: main → Save</b>.</td></tr>
+                <tr><td>4</td><td>Dopo ~1 minuto l'app è su <b>https://tuonome.github.io/tappy/</b>: da lì funzionano Bluetooth (tapis e fascia cardio), GPS, tutte le API di Google e l'installazione PWA. Da file:// locale nulla di tutto questo è permesso dai browser.</td></tr>
+            </table></div>
+
 
 
         </div>
